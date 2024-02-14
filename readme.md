@@ -18,3 +18,10 @@ This repo is based on [osdev](https://wiki.osdev.org/File_Systems) wiki explaini
 - [ ] Caching frequently accessed files or parts of files to speed up access
 - [ ] Allowing files to be marked as 'read-only' to prevent unintentional corruption of critical data
 - [ ] Providing a mechanism for preventing unauthorized access to a user's files
+
+It will be implemented using the inode indexing method
+
+Ref:
+- https://www.youtube.com/watch?v=6KjMlm8hhFA
+- https://www.youtube.com/watch?v=tMVj22EWg6A
+- https://blog.carlosgaldino.com/writing-a-file-system-from-scratch-in-rust.html
