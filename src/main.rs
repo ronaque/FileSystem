@@ -7,16 +7,34 @@ fn main() {
     println!("Welcome to VFS");
 
     let mut command: String = String::new();
+
     println!("Type a command");
     io::stdin()
         .read_line(&mut command)
         .expect("Error on reading line");
 
-    let command: Vec<_> = command
+    let mut command_vector: Vec<_> = command
         .trim()
         .split_whitespace()
         .map(str::to_string)
         .collect();
 
-    commands::handle_commands(command);
+    let mut command_result: bool = commands::handle_commands(command_vector);
+
+    while command_result {
+        println!("Type a command");
+        command.clear();
+        io::stdin()
+            .read_line(&mut command)
+            .expect("Error on reading line");
+
+        let mut command_vector: Vec<_> = command
+            .trim()
+            .split_whitespace()
+            .map(str::to_string)
+            .collect();
+
+        command_result = commands::handle_commands(command_vector);
+    }
+    println!("Goodbye!");
 }
