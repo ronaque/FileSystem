@@ -1,26 +1,22 @@
-use std::io::{self, stdin, stdout};
+use std::io::{self, read_to_string, stdin};
+
+mod commands;
 
 fn main() {
-    let a = [1, 2, 3, 4, 5];
+    print!("\x1B[2J\x1B[1;1H"); // x1B = Escape, [2J = clear screen, x1B[1;1H = Move cursor x/y
+    println!("Welcome to VFS");
 
-    println!("Please enter an array index.");
-
-    let mut index = String::new();
-
+    let mut command: String = String::new();
+    println!("Type a command");
     io::stdin()
-        .read_line(&mut index)
-        .expect("Failed to read line");
+        .read_line(&mut command)
+        .expect("Error on reading line");
 
-    println!("O valor de entrada é: {index}.");
-
-    let index: usize = index
+    let command: Vec<_> = command
         .trim()
-        .parse()
-        .expect("Index entered was not a number");
+        .split_whitespace()
+        .map(str::to_string)
+        .collect();
 
-    println!("O valor processado é: {index}.");
-
-    let element = a[index];
-
-    println!("The value of the element at index {index} is: {element}");
+    commands::handle_commands(command);
 }
