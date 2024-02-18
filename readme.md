@@ -26,10 +26,6 @@ It will be implemented based on the inode indexing method as reference
 Ref:
 - https://www.youtube.com/watch?v=6KjMlm8hhFA
 - https://www.youtube.com/watch?v=tMVj22EWg6A
-- https://blog.carlosgaldino.com/writing-a-file-system-from-scratch-in-rust.html
-
-
-## DevBlog
-
-#### 15/02/24 
-Started implementing the code, learning about the basics of rust, and the escape ANSI code to manipulate the terminal.
+- [Carlos Galdino Implementation Description](https://blog.carlosgaldino.com/writing-a-file-system-from-scratch-in-rust.html)
+- [Carlos Galdion Implementation](https://github.com/carlosgaldino/gotenksfs)
+- [Strutcture Description](https://en.wikipedia.org/wiki/Inode#:~:text=The%20inode%20(index%20node)%20is,locations%20of%20the%20object's%20data.)
