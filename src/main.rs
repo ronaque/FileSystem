@@ -1,7 +1,5 @@
 use std::io::{self, stdout, Write};
 
-use crate::utils::clear_screen;
-
 mod commands;
 mod types;
 mod utils;
@@ -9,7 +7,7 @@ mod utils;
 const welcome: &str = "Welcome to VFS";
 
 fn main() {
-    clear_screen();
+    utils::clear_screen();
     println!("{welcome}");
 
     loop {
