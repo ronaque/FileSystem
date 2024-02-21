@@ -15,10 +15,9 @@ fn main() {
     utils::clear_screen();
     println!("{welcome}");
     let root = create_root();
+    let mut actual_inode = root;
     loop {
-        root.print_inode_path();
-        // print!("tmp/ > ");
-        // stdout().flush().unwrap();
+        actual_inode.print_inode_path();
 
         let mut command = String::new();
         io::stdin()
@@ -31,9 +30,10 @@ fn main() {
             .map(String::from)
             .collect();
 
-        if !commands_handler::handle_commands(command_vector) {
-            break;
-        }
+        actual_inode = match commands_handler::handle_commands(command_vector, actual_inode) {
+            Some(inode) => inode,
+            None => break,
+        };
     }
 
     println!("Goodbye!");

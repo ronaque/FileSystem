@@ -1,24 +1,26 @@
-pub fn handle_commands(commands: Vec<String>) -> bool {
+use crate::types::{DIR_MODE, FILE_MODE, Inode};
+
+pub fn handle_commands(commands: Vec<String>, actual_inode: Inode) -> Option<Inode> {
     match commands[0].as_str() {
         "help" => {
             let help_commands = commands[1..].to_vec();
             handle_help(help_commands);
-            true
+            Some(actual_inode)
         }
         "new" => {
             let new_commands = commands[1..].to_vec();
-            match handle_new(new_commands) {
-                Ok(_) => true,
+            match handle_new(new_commands, actual_inode) {
+                Ok(new_node) => Some(new_node),
                 Err(error) => {
                     println!("{}", error);
-                    true
+                    None
                 }
             }
         }
-        "exit" => false,
+        "exit" => None,
         _ => {
             println!("Command not found. Type 'help' to see the list of available commands");
-            true
+            Some(actual_inode)
         }
     }
 }
@@ -41,7 +43,7 @@ fn handle_help(commands: Vec<String>) {
     }
 }
 
-fn handle_new(commands: Vec<String>) -> Result<bool, &'static str> {
+fn handle_new(commands: Vec<String>, hard_link: Inode) -> Result<Inode, &'static str> {
     if commands.len() != 2 {
         return Err("Invalid number of arguments, type 'help new' to see the usage of the command");
     }
@@ -49,14 +51,14 @@ fn handle_new(commands: Vec<String>) -> Result<bool, &'static str> {
         if commands[1].is_empty() || commands[1].contains("/") || commands[1].contains("\\") {
             return Err("Invalid name for new file");
         }
-        println!("Creating a new file");
-        Ok(true)
+        let new_file = Inode::new(FILE_MODE, commands[1].clone(), Some(Box::new(hard_link)));
+        Ok(new_file)
     } else if commands[0] == "directory" {
         if commands[1].is_empty() || commands[1].contains("/") || commands[1].contains("\\") {
             return Err("Invalid name for new directory");
         }
-        println!("Creating a new directory");
-        Ok(true)
+        let new_directory = Inode::new(DIR_MODE, commands[1].clone(), Some(Box::new(hard_link)));
+        Ok(new_directory)
     } else {
         return Err("Invalid type of new content, type 'help new' to see the usage of the command");
     }
