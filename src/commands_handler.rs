@@ -1,5 +1,3 @@
-use std::fmt::Error;
-
 pub fn handle_commands(commands: Vec<String>) -> bool {
     match commands[0].as_str() {
         "help" => {
