@@ -1,7 +1,7 @@
 use std::io::{stdout, Stdout, Write};
 use std::thread::sleep;
 use std::time::Duration;
-use crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers, poll, read};
+use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, poll, read};
 use crossterm::{execute, QueueableCommand, terminal};
 use crossterm::cursor::MoveTo;
 use crossterm::terminal::{Clear, ClearType, disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
@@ -14,10 +14,60 @@ fn reload_terminal(mut terminal: &Stdout, data: String) {
     terminal.write(data.as_bytes()).unwrap();
     terminal.flush().unwrap();
 }
+
+fn handle_key_event(event: KeyEvent, inputMode: bool, terminal: &Stdout, mut data: String) -> Option<(bool, bool, String)> {
+    /*! Handle the key event and return a tuple with the following values:
+    * 1. bool: quit the file editor
+    * 2. bool: input mode
+    * 3. String: data modified
+    */
+    if event.kind == KeyEventKind::Press {
+        if inputMode {
+            match event.code {
+                KeyCode::Char(x) => {
+                    data.push(x);
+                    reload_terminal(&terminal, data.clone());
+                    Some((false, inputMode, data))
+                },
+                KeyCode::Backspace => {
+                    data.pop();
+                    reload_terminal(&terminal, data.clone());
+                    Some((false, inputMode, data))
+                },
+                KeyCode::Enter => {
+                    data.push('\n');
+                    reload_terminal(&terminal, data.clone());
+                    Some((false, inputMode, data))
+                },
+                KeyCode::Esc => {
+                    Some((false, false, data))
+                },
+                _ => None
+            }
+        } else {
+            match event.code {
+                KeyCode::Char(x) => {
+                    if x == 's' && event.modifiers == KeyModifiers::CONTROL {
+                        return Some((true, inputMode, data));
+                    } else if x == 'i' {
+                        return Some((false, true, data));
+                    } else {
+                        None
+                    }
+                },
+                _ => None
+            }
+        }
+    } else{
+        None
+    }
+}
+
 pub fn create_new_file(name: String, hard_link: Inode) -> Inode {
     let mut terminal: Stdout = stdout();
     let mut quit: bool = false;
     let mut data: String = String::new();
+    let mut input_mode: bool = false;
     EnterAlternateScreen;
     enable_raw_mode();
     terminal.write(b"Alternate Screen in raw mode").unwrap();
@@ -32,18 +82,13 @@ pub fn create_new_file(name: String, hard_link: Inode) -> Inode {
                     h = nh;
                 },
                 Event::Key(event) => {
-                    if event.kind == KeyEventKind::Press {
-                        match event.code {
-                            KeyCode::Char(x) => {
-                                if x == 'c' && event.modifiers == KeyModifiers::CONTROL {
-                                    quit = true;
-                                } else {
-                                    data.push(x);
-                                    reload_terminal(&terminal, data.clone());
-                                }
-                            }
-                            _ => {}
-                        }
+                    match handle_key_event(event, input_mode, &terminal, data.clone()) {
+                        Some((q, im, d)) => {
+                            quit = q;
+                            input_mode = im;
+                            data = d;
+                        },
+                        None => {}
                     }
                 }
                 _ => {
