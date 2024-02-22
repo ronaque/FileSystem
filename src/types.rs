@@ -1,4 +1,4 @@
-use std::io::{stdout, Write};
+use std::io::{stdout, Stdout, Write};
 use super::utils;
 pub const DIR_MODE: u8 = 0;
 pub const FILE_MODE: u8 = 1;
@@ -63,7 +63,7 @@ impl Inode {
         }
     }
 
-    pub fn print_inode_path(&self) {
+    pub fn print_inode_path(&self, terminal: &mut Stdout) {
         let mut hard_link_tree: Vec<&Inode> = vec![self];
         let mut current_inode = self;
         while let Some(inode) = &current_inode.hard_link {
@@ -84,8 +84,8 @@ impl Inode {
                 tree_string.push_str("/");
             }
         }
-        print!("{}>", tree_string);
-        stdout().flush().unwrap();
+        terminal.write(format!("{}>", tree_string).as_bytes()).unwrap();
+        terminal.flush().unwrap();
     }
 
 }

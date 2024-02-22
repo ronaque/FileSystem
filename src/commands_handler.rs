@@ -1,3 +1,4 @@
+use crate::commands::create_new_file;
 use crate::types::{DIR_MODE, FILE_MODE, Inode};
 
 pub fn handle_commands(commands: Vec<String>, actual_inode: Inode) -> Option<Inode> {
@@ -51,7 +52,7 @@ fn handle_new(commands: Vec<String>, hard_link: Inode) -> Result<Inode, &'static
         if commands[1].is_empty() || commands[1].contains("/") || commands[1].contains("\\") {
             return Err("Invalid name for new file");
         }
-        let new_file = Inode::new(FILE_MODE, commands[1].clone(), Some(Box::new(hard_link)));
+        let new_file = create_new_file(commands[1].clone(), hard_link);
         Ok(new_file)
     } else if commands[0] == "directory" {
         if commands[1].is_empty() || commands[1].contains("/") || commands[1].contains("\\") {
