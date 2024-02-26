@@ -8,50 +8,94 @@ use crossterm::terminal::{Clear, ClearType, disable_raw_mode, enable_raw_mode, E
 use crate::types::{FILE_MODE, Inode};
 
 struct GapBuffer {
-    data: String,
-    index: u16,
+    data: Vec<Vec<char>>,
+    line_index: u16,
+    col_index: u16,
 }
 
 impl GapBuffer{
     fn new() -> GapBuffer {
         GapBuffer {
-            data: String::new(),
-            index: 0,
+            data: vec![vec![]],
+            line_index: 0,
+            col_index: 0,
         }
     }
 
     fn clone(&self) -> GapBuffer {
         GapBuffer {
             data: self.data.clone(),
-            index: self.index,
+            line_index: self.line_index,
+            col_index: self.col_index,
         }
+    }
+
+    fn to_string(&self) -> String {
+        let mut result = String::new();
+        let mut idx_line: u16 = 1;
+        for line in &self.data {
+            for c in line {
+                result.push(*c);
+            }
+            if idx_line < self.data.len() as u16 {
+                result.push('\n');
+            }
+            idx_line += 1;
+        }
+        result
     }
 
     fn push(&mut self, c: char) {
-        self.data.insert(self.index as usize, c);
-        self.index += 1;
+        self.data[self.line_index as usize].insert(self.col_index as usize, c);
+        self.col_index += 1;
     }
+
+    fn push_line(&mut self) {
+        self.data.insert(self.line_index as usize + 1, vec![]);
+        self.line_index += 1;
+        self.col_index = 0;
+    }
+
 
     fn remove(&mut self) {
-        if self.index > 0 {
-            self.index -= 1;
-            self.data.remove(self.index as usize);
+        if self.col_index > 0 {
+            self.col_index -= 1;
+            self.data[self.line_index as usize].remove(self.col_index as usize);
+        } else if self.line_index > 0 {
+            self.line_index -= 1;
+            self.data.remove(self.line_index as usize);
         }
     }
 
-    fn move_left(&mut self, n: u16) {
-        if self.index > n {
-            self.index -= n;
+    fn move_left(&mut self, num_mov: u16) {
+        if self.col_index > num_mov {
+            self.col_index -= num_mov;
         } else {
-            self.index = 0;
+            self.col_index = 0;
         }
     }
 
-    fn move_right(&mut self, n: u16) {
-        if self.index + n < self.data.len() as u16 {
-            self.index += n;
+    fn move_right(&mut self, num_mov: u16) {
+        if self.col_index + num_mov < (self.data[self.line_index as usize].len() - 1) as u16 {
+            self.col_index += num_mov;
         } else {
-            self.index = self.data.len() as u16;
+            self.col_index = (self.data[self.line_index as usize].len() - 1) as u16;
+        }
+    }
+
+    fn move_up(&mut self, num_mov: u16) {
+        if self.line_index > num_mov {
+            self.line_index -= num_mov;
+        } else {
+            self.line_index = 0;
+        }
+    }
+
+    fn move_down(&mut self, num_mov: u16) {
+        if self.line_index + num_mov < (self.data.len() - 1) as u16 {
+            self.line_index += num_mov;
+        } else {
+            self.line_index = (self.data.len() - 1) as u16;
         }
     }
 }
@@ -89,23 +133,33 @@ fn handle_key_event(event: KeyEvent, input_mode: bool, terminal: &Stdout, mut da
             match event.code {
                 KeyCode::Char(x) => {
                     data.push(x);
-                    reload_terminal_input_mode(&terminal, data.data.as_str(), horizontal_moves.clone() as u16);
+                    reload_terminal_input_mode(&terminal, data.to_string().as_str(), horizontal_moves.clone() as u16);
                     Some((false, input_mode, data))
                 },
                 KeyCode::Left => {
-                    *horizontal_moves += 1;
-                    data.move_left(1);
-                    reload_terminal_input_mode(&terminal, data.data.as_str(), horizontal_moves.clone() as u16);
+                    if *horizontal_moves < data.data[data.line_index as usize].len() {
+                        *horizontal_moves += 1;
+                        data.move_left(1);
+                        reload_terminal_input_mode(&terminal, data.to_string().as_str(), horizontal_moves.clone() as u16);
+                    }
+                    Some((false, input_mode, data))
+                },
+                KeyCode::Right => {
+                    if *horizontal_moves > 0 {
+                        *horizontal_moves -= 1;
+                        data.move_right(1);
+                        reload_terminal_input_mode(&terminal, data.to_string().as_str(), horizontal_moves.clone() as u16);
+                    }
                     Some((false, input_mode, data))
                 },
                 KeyCode::Backspace => {
                     data.remove();
-                    reload_terminal_input_mode(&terminal, data.data.as_str(), horizontal_moves.clone() as u16);
+                    reload_terminal_input_mode(&terminal, data.to_string().as_str(), horizontal_moves.clone() as u16);
                     Some((false, input_mode, data))
                 },
                 KeyCode::Enter => {
-                    reload_terminal_input_mode(&terminal, data.data.as_str(), horizontal_moves.clone() as u16);
-                    data.push('\n');
+                    data.push_line();
+                    reload_terminal_input_mode(&terminal, data.to_string().as_str(), horizontal_moves.clone() as u16);
                     Some((false, input_mode, data))
                 },
                 KeyCode::Esc => {
@@ -119,7 +173,7 @@ fn handle_key_event(event: KeyEvent, input_mode: bool, terminal: &Stdout, mut da
                     if x == 's' && event.modifiers == KeyModifiers::CONTROL {
                         return Some((true, input_mode, data));
                     } else if x == 'i' {
-                        reload_terminal_input_mode(&terminal, data.data.as_str(), horizontal_moves.clone() as u16);
+                        reload_terminal_input_mode(&terminal, data.to_string().as_str(), horizontal_moves.clone() as u16);
                         return Some((false, true, data));
                     } else {
                         None
@@ -139,11 +193,13 @@ pub fn create_new_file(name: String, hard_link: Inode) -> Inode {
     let mut data: GapBuffer = GapBuffer::new();
     let mut input_mode: bool = false;
     let mut horizontal_moves = 0;
+
     EnterAlternateScreen;
     enable_raw_mode().expect("Raw Mode of terminal not enabled");
     terminal.queue(MoveTo(0, 0)).unwrap();
-    reload_terminal_command_mode(&terminal, data.data.as_str());
+    reload_terminal_command_mode(&terminal, data.to_string().as_str());
     let (mut w, mut h) = terminal::size().unwrap();
+
     while !quit {
         while poll(Duration::ZERO).unwrap() {
             match read().unwrap() {
@@ -153,13 +209,13 @@ pub fn create_new_file(name: String, hard_link: Inode) -> Inode {
                 },
                 Event::Key(event) => {
                     match handle_key_event(event, input_mode, &terminal, data.clone(), &mut horizontal_moves) {
-                        Some((q, im, d)) => {
-                            if !im {
-                                reload_terminal_command_mode(&terminal, d.data.as_str());
+                        Some((nquit, ninput_mode, ndata)) => {
+                            if !ninput_mode {
+                                reload_terminal_command_mode(&terminal, ndata.to_string().as_str());
                             }
-                            quit = q;
-                            input_mode = im;
-                            data = d;
+                            quit = nquit;
+                            input_mode = ninput_mode;
+                            data = ndata;
                         },
                         None => {}
                     }
