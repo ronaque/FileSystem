@@ -1,7 +1,7 @@
 use std::io::{self, stdout, Write};
 use crossterm::cursor::MoveTo;
 use crossterm::QueueableCommand;
-use crossterm::terminal::{Clear, ClearType, is_raw_mode_enabled};
+use crossterm::terminal::{Clear, ClearType};
 
 mod commands_handler;
 mod types;

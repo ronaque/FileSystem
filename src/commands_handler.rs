@@ -1,5 +1,5 @@
 use crate::commands::create_new_file;
-use crate::types::{DIR_MODE, FILE_MODE, Inode};
+use crate::types::{DIR_MODE, Inode};
 
 pub fn handle_commands(commands: Vec<String>, actual_inode: Inode) -> Option<Inode> {
     match commands[0].as_str() {

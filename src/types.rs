@@ -1,10 +1,10 @@
-use std::io::{stdout, Stdout, Write};
+use std::io::{Stdout, Write};
 use super::utils;
 pub const DIR_MODE: u8 = 0;
 pub const FILE_MODE: u8 = 1;
 
 const ROOT_INODE: u64 = 0;
-static mut inodeSerialNumer: u64 = 0;
+static mut INODE_SERIAL_NUMER: u64 = 0;
 
 #[derive(Debug)]
 pub enum InodeData {
@@ -27,9 +27,9 @@ pub struct Inode {
 
 impl Inode {
     pub fn new(mode: u8, name: String, hard_link: Option<Box<Inode>>) -> Inode {
-        let serial_number: u64 = unsafe { inodeSerialNumer };
-        unsafe { inodeSerialNumer += 1; }
-        if (mode == DIR_MODE) {
+        let serial_number: u64 = unsafe { INODE_SERIAL_NUMER };
+        unsafe { INODE_SERIAL_NUMER += 1; }
+        if mode == DIR_MODE {
             Inode {
                 mode,
                 size: 0,

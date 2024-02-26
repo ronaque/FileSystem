@@ -1,9 +1,9 @@
-use std::io::{Cursor, stdout, Stdout, Write};
+use std::io::{stdout, Stdout, Write};
 use std::thread::sleep;
 use std::time::Duration;
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, poll, read};
-use crossterm::{cursor, QueueableCommand, terminal};
-use crossterm::cursor::{MoveTo, MoveLeft, MoveRight};
+use crossterm::{QueueableCommand, terminal};
+use crossterm::cursor::{MoveTo, MoveLeft};
 use crossterm::terminal::{Clear, ClearType, disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
 use crate::types::{FILE_MODE, Inode};
 
@@ -57,12 +57,12 @@ impl GapBuffer{
 }
 
 fn reload_terminal_command_mode(mut terminal: &Stdout, data: &str) {
-    let (mut w, mut h) = terminal::size().unwrap();
+    let (w, h) = terminal::size().unwrap();
     terminal.queue(Clear(ClearType::All)).unwrap();
     terminal.queue(MoveTo(0, 0)).unwrap();
     terminal.write(data.as_bytes()).unwrap();
     terminal.queue(MoveTo(0, h-2)).unwrap();
-    let mut bar = "─".repeat(w as usize);
+    let bar = "─".repeat(w as usize);
     terminal.write(bar.as_bytes()).unwrap();
     terminal.queue(MoveTo(0, h-1)).unwrap();
     terminal.write(b"Ctrl+S: Save | I: Insert mode").unwrap();
@@ -92,7 +92,7 @@ fn handle_key_event(event: KeyEvent, input_mode: bool, terminal: &Stdout, mut da
                     reload_terminal_input_mode(&terminal, data.data.as_str(), horizontal_moves.clone() as u16);
                     Some((false, input_mode, data))
                 },
-                KeyCode::Left => unsafe {
+                KeyCode::Left => {
                     *horizontal_moves += 1;
                     data.move_left(1);
                     reload_terminal_input_mode(&terminal, data.data.as_str(), horizontal_moves.clone() as u16);
@@ -179,7 +179,7 @@ pub fn create_new_file(name: String, hard_link: Inode) -> Inode {
     terminal.flush().unwrap();
 
     return Inode::new(FILE_MODE, name, Some(Box::new(hard_link)));
-    // Todo!("Make a CLI, vim-like, to write the content of the file");
+    // todo!("Make a CLI, vim-like, to write the content of the file");
     // Todo!("Create the inode with the file data and name");
     // Todo!("Add the new file to the current directory");
     // Todo!("Calculate the file size and store on the inode, and directory size recursively");
