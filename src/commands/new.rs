@@ -3,7 +3,7 @@ use std::thread::sleep;
 use std::time::Duration;
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, poll, read};
 use crossterm::{QueueableCommand, terminal};
-use crossterm::cursor::{MoveTo, MoveLeft};
+use crossterm::cursor::{MoveTo, MoveLeft, MoveUp};
 use crossterm::terminal::{Clear, ClearType, disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
 use crate::types::{FILE_MODE, Inode};
 
@@ -112,17 +112,20 @@ fn reload_terminal_command_mode(mut terminal: &Stdout, data: &str) {
     terminal.write(b"Ctrl+S: Save | I: Insert mode").unwrap();
     terminal.flush().unwrap();
 }
-fn reload_terminal_input_mode(mut terminal: &Stdout, data: &str, horizontal_moves: u16) {
+fn reload_terminal_input_mode(mut terminal: &Stdout, data: &str, horizontal_moves: u16, vertical_moves: u16) {
     terminal.queue(Clear(ClearType::All)).unwrap();
     terminal.queue(MoveTo(0, 0)).unwrap();
     terminal.write(data.as_bytes()).unwrap();
     if horizontal_moves > 0 {
         terminal.queue(MoveLeft(horizontal_moves)).unwrap();
     }
+    if vertical_moves > 0 {
+        terminal.queue(MoveUp(vertical_moves)).unwrap();
+    }
     terminal.flush().unwrap();
 }
 
-fn handle_key_event(event: KeyEvent, input_mode: bool, terminal: &Stdout, mut data: GapBuffer, horizontal_moves: &mut usize) -> Option<(bool, bool, GapBuffer)> {
+fn handle_key_event(event: KeyEvent, input_mode: bool, terminal: &Stdout, mut data: GapBuffer, horizontal_moves: &mut usize, vertical_moves: &mut usize) -> Option<(bool, bool, GapBuffer)> {
     /*! Handle the key event and return a tuple with the following values:
     * 1. bool: quit the file editor
     * 2. bool: input mode
@@ -133,14 +136,14 @@ fn handle_key_event(event: KeyEvent, input_mode: bool, terminal: &Stdout, mut da
             match event.code {
                 KeyCode::Char(x) => {
                     data.push(x);
-                    reload_terminal_input_mode(&terminal, data.to_string().as_str(), horizontal_moves.clone() as u16);
+                    reload_terminal_input_mode(&terminal, data.to_string().as_str(), horizontal_moves.clone() as u16, vertical_moves.clone() as u16);
                     Some((false, input_mode, data))
                 },
                 KeyCode::Left => {
                     if *horizontal_moves < data.data[data.line_index as usize].len() {
                         *horizontal_moves += 1;
                         data.move_left(1);
-                        reload_terminal_input_mode(&terminal, data.to_string().as_str(), horizontal_moves.clone() as u16);
+                        reload_terminal_input_mode(&terminal, data.to_string().as_str(), horizontal_moves.clone() as u16, vertical_moves.clone() as u16);
                     }
                     Some((false, input_mode, data))
                 },
@@ -148,18 +151,34 @@ fn handle_key_event(event: KeyEvent, input_mode: bool, terminal: &Stdout, mut da
                     if *horizontal_moves > 0 {
                         *horizontal_moves -= 1;
                         data.move_right(1);
-                        reload_terminal_input_mode(&terminal, data.to_string().as_str(), horizontal_moves.clone() as u16);
+                        reload_terminal_input_mode(&terminal, data.to_string().as_str(), horizontal_moves.clone() as u16, vertical_moves.clone() as u16);
+                    }
+                    Some((false, input_mode, data))
+                },
+                KeyCode::Up => {
+                    if *vertical_moves < data.data.len() {
+                        *vertical_moves += 1;
+                        data.move_up(1);
+                        reload_terminal_input_mode(&terminal, data.to_string().as_str(), horizontal_moves.clone() as u16, vertical_moves.clone() as u16);
+                    }
+                    Some((false, input_mode, data))
+                },
+                KeyCode::Down => {
+                    if *vertical_moves > 0 {
+                        *vertical_moves -= 1;
+                        data.move_down(1);
+                        reload_terminal_input_mode(&terminal, data.to_string().as_str(), horizontal_moves.clone() as u16, vertical_moves.clone() as u16);
                     }
                     Some((false, input_mode, data))
                 },
                 KeyCode::Backspace => {
                     data.remove();
-                    reload_terminal_input_mode(&terminal, data.to_string().as_str(), horizontal_moves.clone() as u16);
+                    reload_terminal_input_mode(&terminal, data.to_string().as_str(), horizontal_moves.clone() as u16, vertical_moves.clone() as u16);
                     Some((false, input_mode, data))
                 },
                 KeyCode::Enter => {
                     data.push_line();
-                    reload_terminal_input_mode(&terminal, data.to_string().as_str(), horizontal_moves.clone() as u16);
+                    reload_terminal_input_mode(&terminal, data.to_string().as_str(), horizontal_moves.clone() as u16, vertical_moves.clone() as u16);
                     Some((false, input_mode, data))
                 },
                 KeyCode::Esc => {
@@ -173,7 +192,7 @@ fn handle_key_event(event: KeyEvent, input_mode: bool, terminal: &Stdout, mut da
                     if x == 's' && event.modifiers == KeyModifiers::CONTROL {
                         return Some((true, input_mode, data));
                     } else if x == 'i' {
-                        reload_terminal_input_mode(&terminal, data.to_string().as_str(), horizontal_moves.clone() as u16);
+                        reload_terminal_input_mode(&terminal, data.to_string().as_str(), horizontal_moves.clone() as u16, vertical_moves.clone() as u16);
                         return Some((false, true, data));
                     } else {
                         None
@@ -193,6 +212,7 @@ pub fn create_new_file(name: String, hard_link: Inode) -> Inode {
     let mut data: GapBuffer = GapBuffer::new();
     let mut input_mode: bool = false;
     let mut horizontal_moves = 0;
+    let mut vertical_moves = 0;
 
     EnterAlternateScreen;
     enable_raw_mode().expect("Raw Mode of terminal not enabled");
@@ -208,7 +228,7 @@ pub fn create_new_file(name: String, hard_link: Inode) -> Inode {
                     h = nh;
                 },
                 Event::Key(event) => {
-                    match handle_key_event(event, input_mode, &terminal, data.clone(), &mut horizontal_moves) {
+                    match handle_key_event(event, input_mode, &terminal, data.clone(), &mut horizontal_moves, &mut vertical_moves) {
                         Some((nquit, ninput_mode, ndata)) => {
                             if !ninput_mode {
                                 reload_terminal_command_mode(&terminal, ndata.to_string().as_str());
