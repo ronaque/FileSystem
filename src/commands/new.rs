@@ -95,17 +95,37 @@ impl GapBuffer{
 
     fn move_up(&mut self) {
         if self.line_index > 1 {
-            self.line_index -= 1;
+            if self.data[(self.line_index - 1) as usize].len() > self.col_index as usize {
+                self.line_index -= 1;
+            } else {
+                self.line_index -= 1;
+                self.col_index = self.data[self.line_index as usize].len() as u16;
+            }
         } else {
-            self.line_index = 0;
+            if self.data[(self.line_index - 1) as usize].len() > self.col_index as usize {
+                self.line_index = 0;
+            } else {
+                self.line_index = 0;
+                self.col_index = self.data[self.line_index as usize].len() as u16;
+            }
         }
     }
 
     fn move_down(&mut self) {
         if self.line_index + 1 < (self.data.len() - 1) as u16 {
-            self.line_index += 1;
+            if self.data[(self.line_index + 1) as usize].len() > self.col_index as usize {
+                self.line_index += 1;
+            } else {
+                self.line_index += 1;
+                self.col_index = self.data[self.line_index as usize].len() as u16;
+            }
         } else {
-            self.line_index = (self.data.len() - 1) as u16;
+            if self.data[(self.line_index + 1) as usize].len() > self.col_index as usize {
+                self.line_index = (self.data.len() - 1) as u16;
+            } else {
+                self.line_index = (self.data.len() - 1) as u16;
+                self.col_index = self.data[self.line_index as usize].len() as u16;
+            }
         }
     }
 }
