@@ -1,27 +1,30 @@
 use crate::commands::create_new_file;
 use crate::types::{DIR_MODE, Inode};
 
-pub fn handle_commands(commands: Vec<String>, actual_inode: Inode) -> Option<Inode> {
+pub fn handle_commands(commands: Vec<String>, actual_inode: Inode) -> Option<(Inode, bool)> {
     match commands[0].as_str() {
         "help" => {
             let help_commands = commands[1..].to_vec();
             handle_help(help_commands);
-            Some(actual_inode)
+            Some((actual_inode, false))
+
         }
         "new" => {
             let new_commands = commands[1..].to_vec();
-            match handle_new(new_commands, actual_inode) {
-                Ok(new_node) => Some(new_node),
+            match handle_new(new_commands, actual_inode.clone()) {
+                Ok(new_node) => {
+                    Some((new_node, false))
+                },
                 Err(error) => {
                     println!("{}", error);
-                    None
+                    Some((actual_inode, false))
                 }
             }
         }
-        "exit" => None,
+        "exit" => Some((actual_inode, true)),
         _ => {
             println!("Command not found. Type 'help' to see the list of available commands");
-            Some(actual_inode)
+            Some((actual_inode, false))
         }
     }
 }
@@ -52,8 +55,10 @@ fn handle_new(commands: Vec<String>, hard_link: Inode) -> Result<Inode, &'static
         if commands[1].is_empty() || commands[1].contains("/") || commands[1].contains("\\") {
             return Err("Invalid name for new file");
         }
-        let new_file = create_new_file(commands[1].clone(), hard_link);
-        Ok(new_file)
+        match create_new_file(commands[1].clone(), hard_link.clone()) {
+            Ok(()) => Ok(hard_link),
+            Err(error) => Err(error),
+        }
     } else if commands[0] == "directory" {
         if commands[1].is_empty() || commands[1].contains("/") || commands[1].contains("\\") {
             return Err("Invalid name for new directory");

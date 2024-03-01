@@ -5,7 +5,7 @@ use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, pol
 use crossterm::{QueueableCommand, terminal};
 use crossterm::cursor::{MoveTo};
 use crossterm::terminal::{Clear, ClearType, disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
-use crate::types::{FILE_MODE, Inode};
+use crate::types::{Inode};
 
 struct GapBuffer {
     data: Vec<Vec<char>>,
@@ -265,10 +265,16 @@ fn create_gap_buffer() -> String {
     data.to_string()
 }
 
-pub fn create_new_file(name: String, hard_link: Inode) -> Inode {
+pub fn create_new_file(name: String, hard_link: Inode) -> Result<(), &'static str> {
     let file_data: String = create_gap_buffer();
 
-    return Inode::new(FILE_MODE, name, Some(Box::new(hard_link)));
+    let inode = Inode::new_file_with_data(name, file_data, Some(Box::new(hard_link.clone())));
+
+    if hard_link.is_file(){
+        return Err("The hard link is a file, it should be a directory");
+    }
+
+    return Ok(());
     // Todo!("Create the inode with the file data and name");
     // Todo!("Add the new file to the current directory");
     // Todo!("Calculate the file size and store on the inode, and directory size recursively");
