@@ -130,6 +130,7 @@ impl GapBuffer{
 }
 
 fn reload_terminal_command_mode(mut terminal: &Stdout, data: &str) {
+    // This function will reload the terminal outside of input mode with the data of the GapBuffer
     let (w, h) = terminal::size().unwrap();
     terminal.queue(Clear(ClearType::All)).unwrap();
     terminal.queue(MoveTo(0, 0)).unwrap();
@@ -142,6 +143,7 @@ fn reload_terminal_command_mode(mut terminal: &Stdout, data: &str) {
     terminal.flush().unwrap();
 }
 fn reload_terminal_input_mode(mut terminal: &Stdout, data: GapBuffer) {
+    // This function will reload the terminal with the data of the GapBuffer and the cursor in the right position
     terminal.queue(Clear(ClearType::All)).unwrap();
     terminal.queue(MoveTo(0, 0)).unwrap();
     terminal.write(data.to_string().as_bytes()).unwrap();
@@ -233,6 +235,7 @@ fn handle_key_event(event: KeyEvent, input_mode: &mut bool, quit: &mut bool, ter
 }
 
 fn create_gap_buffer() -> String {
+    // Create a gap buffer to manipulate with a file editor and return the string that the user wrote
     let mut terminal: Stdout = stdout();
     let mut quit: bool = false;
     let mut data: GapBuffer = GapBuffer::new();
@@ -273,6 +276,8 @@ fn create_gap_buffer() -> String {
 }
 
 pub fn create_new_file(name: String, hard_link: &mut Inode) -> Result<(), &'static str> {
+    // Create a new file with the given name and add it to the hard link, which must be a directory
+
     let file_data: String = create_gap_buffer();
 
     let inode_file = Inode::new_file_with_data(name, file_data, Some(Box::new(hard_link.clone())));
@@ -283,7 +288,5 @@ pub fn create_new_file(name: String, hard_link: &mut Inode) -> Result<(), &'stat
 
     hard_link.add_file(inode_file.clone());
 
-
     return Ok(());
-    // Todo!("Calculate the file size and store on the inode, and directory size recursively");
 }
