@@ -150,51 +150,60 @@ fn reload_terminal_input_mode(mut terminal: &Stdout, data: GapBuffer) {
     terminal.flush().unwrap();
 }
 
-fn handle_key_event(event: KeyEvent, input_mode: bool, terminal: &Stdout, mut data: GapBuffer, horizontal_moves: &mut usize, vertical_moves: &mut usize) -> Option<(bool, bool, GapBuffer)> {
+fn handle_key_event(event: KeyEvent, input_mode: &mut bool, quit: &mut bool, terminal: &Stdout, mut data: GapBuffer) -> Option<(bool, bool, GapBuffer)> {
     /*! Handle the key event and return a tuple with the following values:
     * 1. bool: quit the file editor
     * 2. bool: input mode
     * 3. String: data modified
     */
     if event.kind == KeyEventKind::Press {
-        if input_mode {
+        if *input_mode {
             match event.code {
                 KeyCode::Char(x) => {
                     data.push(x);
                     reload_terminal_input_mode(&terminal, data.clone());
-                    Some((false, input_mode, data))
+                    *quit = false;
+                    Some((false, *input_mode, data))
                 },
                 KeyCode::Left => {
                     data.move_left();
                     reload_terminal_input_mode(&terminal, data.clone());
-                    Some((false, input_mode, data))
+                    *quit = false;
+                    Some((false, *input_mode, data))
                 },
                 KeyCode::Right => {
                     data.move_right();
                     reload_terminal_input_mode(&terminal, data.clone());
-                    Some((false, input_mode, data))
+                    *quit = false;
+                    Some((false, *input_mode, data))
                 },
                 KeyCode::Up => {
                     data.move_up();
                     reload_terminal_input_mode(&terminal, data.clone());
-                    Some((false, input_mode, data))
+                    *quit = false;
+                    Some((false, *input_mode, data))
                 },
                 KeyCode::Down => {
                     data.move_down();
                     reload_terminal_input_mode(&terminal, data.clone());
-                    Some((false, input_mode, data))
+                    *quit = false;
+                    Some((false, *input_mode, data))
                 },
                 KeyCode::Backspace => {
                     data.remove();
                     reload_terminal_input_mode(&terminal, data.clone());
-                    Some((false, input_mode, data))
+                    *quit = false;
+                    Some((false, *input_mode, data))
                 },
                 KeyCode::Enter => {
                     data.push_line();
                     reload_terminal_input_mode(&terminal, data.clone());
-                    Some((false, input_mode, data))
+                    *quit = false;
+                    Some((false, *input_mode, data))
                 },
                 KeyCode::Esc => {
+                    *input_mode = false;
+                    *quit = false;
                     Some((false, false, data))
                 },
                 _ => None
@@ -203,9 +212,12 @@ fn handle_key_event(event: KeyEvent, input_mode: bool, terminal: &Stdout, mut da
             match event.code {
                 KeyCode::Char(x) => {
                     if x == 's' && event.modifiers == KeyModifiers::CONTROL {
-                        return Some((true, input_mode, data));
+                        *quit = true;
+                        return Some((true, *input_mode, data));
                     } else if x == 'i' {
                         reload_terminal_input_mode(&terminal, data.clone());
+                        *input_mode = true;
+                        *quit = false;
                         return Some((false, true, data));
                     } else {
                         None
@@ -219,7 +231,7 @@ fn handle_key_event(event: KeyEvent, input_mode: bool, terminal: &Stdout, mut da
     }
 }
 
-pub fn create_new_file(name: String, hard_link: Inode) -> Inode {
+fn create_gap_buffer() -> String {
     let mut terminal: Stdout = stdout();
     let mut quit: bool = false;
     let mut data: GapBuffer = GapBuffer::new();
@@ -241,13 +253,13 @@ pub fn create_new_file(name: String, hard_link: Inode) -> Inode {
                     h = nh;
                 },
                 Event::Key(event) => {
-                    match handle_key_event(event, input_mode, &terminal, data.clone(), &mut horizontal_moves, &mut vertical_moves) {
+                    match handle_key_event(event, &mut input_mode, &mut quit, &terminal, data.clone()) {
                         Some((nquit, ninput_mode, ndata)) => {
                             if !ninput_mode {
                                 reload_terminal_command_mode(&terminal, ndata.to_string().as_str());
                             }
-                            quit = nquit;
-                            input_mode = ninput_mode;
+                            // quit = nquit;
+                            // input_mode = ninput_mode;
                             data = ndata;
                         },
                         None => {}
@@ -267,8 +279,13 @@ pub fn create_new_file(name: String, hard_link: Inode) -> Inode {
     terminal.queue(MoveTo(0, 0)).unwrap();
     terminal.flush().unwrap();
 
+    data.to_string()
+}
+
+pub fn create_new_file(name: String, hard_link: Inode) -> Inode {
+    let file_data: String = create_gap_buffer();
+
     return Inode::new(FILE_MODE, name, Some(Box::new(hard_link)));
-    // todo!("Make a CLI, vim-like, to write the content of the file");
     // Todo!("Create the inode with the file data and name");
     // Todo!("Add the new file to the current directory");
     // Todo!("Calculate the file size and store on the inode, and directory size recursively");
