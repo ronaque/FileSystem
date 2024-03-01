@@ -6,13 +6,13 @@ pub const FILE_MODE: u8 = 1;
 const ROOT_INODE: u64 = 0;
 static mut INODE_SERIAL_NUMER: u64 = 0;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum InodeData {
     File(File),
     Directory(Directory),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Inode {
     mode: u8,                  // file or directory
     size: u64,                 // in bytes
@@ -56,11 +56,52 @@ impl Inode {
         }
     }
 
+    pub fn new_file_with_data(name: String, data: String, hard_link: Option<Box<Inode>>) -> Inode {
+        let serial_number: u64 = unsafe { INODE_SERIAL_NUMER };
+        unsafe { INODE_SERIAL_NUMER += 1; }
+        Inode {
+            mode: FILE_MODE,
+            size: data.len() as u64,
+            permissions: (true, true),
+            hard_link,
+            created_at: Some(utils::now_date()),
+            updated_at: Some(utils::now_date()),
+            accessed_at: Some(utils::now_date()),
+            serial_number,
+            data: InodeData::File(File::new_with_data(name, data)),
+        }
+    }
+
+    fn clone(&self) -> Inode {
+        Inode {
+            mode: self.mode,
+            size: self.size,
+            permissions: self.permissions,
+            hard_link: self.hard_link.clone(),
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+            accessed_at: self.accessed_at,
+            serial_number: self.serial_number,
+            data: match &self.data {
+                InodeData::File(file) => InodeData::File(file.clone()),
+                InodeData::Directory(directory) => InodeData::Directory(directory.clone()),
+            },
+        }
+    }
+
     pub fn get_name(&self) -> &String {
         match &self.data {
             InodeData::File(file) => &file.name,
             InodeData::Directory(directory) => &directory.name,
         }
+    }
+
+    pub fn is_file(&self) -> bool {
+        self.mode == FILE_MODE
+    }
+
+    pub fn is_directory(&self) -> bool {
+        self.mode == DIR_MODE
     }
 
     pub fn print_inode_path(&self, terminal: &mut Stdout) {
@@ -90,7 +131,7 @@ impl Inode {
 
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct File {
     name: String,
     data: String,
@@ -103,9 +144,23 @@ impl File {
             data: String::new(),
         }
     }
+
+    pub fn new_with_data(name: String, data: String) -> File {
+        File {
+            name,
+            data,
+        }
+    }
+
+    pub fn clone(&self) -> File {
+        File {
+            name: self.name.clone(),
+            data: self.data.clone(),
+        }
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Directory {
     name: String,
     files: Vec<Inode>,
@@ -116,6 +171,13 @@ impl Directory {
         Directory {
             name,
             files: Vec::new(),
+        }
+    }
+
+    pub fn clone(&self) -> Directory {
+        Directory {
+            name: self.name.clone(),
+            files: self.files.clone(),
         }
     }
 }
