@@ -1,4 +1,5 @@
 use std::io::{Stdout, Write};
+use std::mem::size_of;
 use super::utils;
 pub const DIR_MODE: u8 = 0;
 pub const FILE_MODE: u8 = 1;
@@ -30,9 +31,10 @@ impl Inode {
         let serial_number: u64 = unsafe { INODE_SERIAL_NUMER };
         unsafe { INODE_SERIAL_NUMER += 1; }
         if mode == DIR_MODE {
+            let size = (size_of::<Inode>() + size_of::<Directory>()) as u64;
             Inode {
                 mode,
-                size: 0,
+                size,
                 permissions: (true, true),
                 hard_link,
                 created_at: Some(utils::now_date()),
@@ -42,9 +44,10 @@ impl Inode {
                 data: InodeData::Directory(Directory::new(name)),
             }
         } else {
+            let size = (size_of::<Inode>() + size_of::<File>()) as u64;
             Inode {
                 mode,
-                size: 0,
+                size,
                 permissions: (true, true),
                 hard_link,
                 created_at: Some(utils::now_date()),
@@ -57,11 +60,12 @@ impl Inode {
     }
 
     pub fn new_file_with_data(name: String, data: String, hard_link: Option<Box<Inode>>) -> Inode {
+        let size = (size_of::<Inode>() + size_of::<File>() + data.len()) as u64;
         let serial_number: u64 = unsafe { INODE_SERIAL_NUMER };
         unsafe { INODE_SERIAL_NUMER += 1; }
         Inode {
             mode: FILE_MODE,
-            size: data.len() as u64,
+            size,
             permissions: (true, true),
             hard_link,
             created_at: Some(utils::now_date()),
@@ -131,6 +135,7 @@ impl Inode {
 
     pub fn add_file(&mut self, file: Inode) {
         if let InodeData::Directory(directory) = &mut self.data {
+            self.size += file.size;
             directory.add_file(file);
         } else {
             eprintln!("Error: trying to add a file to a non-directory inode");

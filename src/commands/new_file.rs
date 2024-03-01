@@ -1,4 +1,5 @@
 use std::io::{stdout, Stdout, Write};
+use std::mem;
 use std::thread::sleep;
 use std::time::Duration;
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, poll, read};
