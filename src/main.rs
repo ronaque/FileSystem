@@ -39,5 +39,5 @@ fn main() {
             None => break,
         };
     }
-    println!("Goodbye! See you soon!");
+    println!("Goodbye! See you soon! But this won't be here anymore D:");
 }

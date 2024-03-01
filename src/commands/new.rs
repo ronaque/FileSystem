@@ -68,62 +68,60 @@ impl GapBuffer{
     }
 
     fn move_left(&mut self) {
+        // This function will move the cursor to the left
+        // If it is in the first column, it will move to the previous line
         if self.col_index == 0 {
+            // Move to Previous Line
             if self.line_index > 0 {
                 self.line_index -= 1;
                 self.col_index = (self.data[self.line_index as usize].len()) as u16;
             }
         } else if self.col_index > 1 {
+            // Move to the previous character
             self.col_index -= 1;
         } else {
+            // Move to the beginning of the line
             self.col_index = 0;
         }
     }
 
     fn move_right(&mut self) {
-        if self.col_index == (self.data[self.line_index as usize].len()) as u16 {
-            if self.line_index + 1 < (self.data.len()) as u16 {
+        // This function will move the cursor to the right
+        // If it is in the last column, it will move to the next line
+        if self.col_index == self.data[self.line_index as usize].len() as u16 {
+            // Move to Next Line
+            if self.line_index + 1 < self.data.len() as u16 {
                 self.line_index += 1;
                 self.col_index = 0;
             }
-        } else if self.col_index + 1 < (self.data[self.line_index as usize].len()) as u16 {
+        } else if self.col_index + 1 < self.data[self.line_index as usize].len() as u16 {
+            // Move to the next character
             self.col_index += 1;
         } else {
-            self.col_index = (self.data[self.line_index as usize].len()) as u16;
+            // Move to the front of the last character in the line
+            self.col_index = self.data[self.line_index as usize].len() as u16;
         }
     }
 
     fn move_up(&mut self) {
-        if self.line_index > 1 {
+        // This function will move the cursor up if it isn't in the first line
+        if self.line_index > 0 {
             if self.data[(self.line_index - 1) as usize].len() > self.col_index as usize {
                 self.line_index -= 1;
             } else {
                 self.line_index -= 1;
-                self.col_index = self.data[self.line_index as usize].len() as u16;
-            }
-        } else {
-            if self.data[(self.line_index - 1) as usize].len() > self.col_index as usize {
-                self.line_index = 0;
-            } else {
-                self.line_index = 0;
                 self.col_index = self.data[self.line_index as usize].len() as u16;
             }
         }
     }
 
     fn move_down(&mut self) {
-        if self.line_index + 1 < (self.data.len() - 1) as u16 {
+        // This function will move the cursor down if it isn't in the last line
+        if self.line_index + 1 < self.data.len() as u16 {
             if self.data[(self.line_index + 1) as usize].len() > self.col_index as usize {
                 self.line_index += 1;
             } else {
                 self.line_index += 1;
-                self.col_index = self.data[self.line_index as usize].len() as u16;
-            }
-        } else {
-            if self.data[(self.line_index + 1) as usize].len() > self.col_index as usize {
-                self.line_index = (self.data.len() - 1) as u16;
-            } else {
-                self.line_index = (self.data.len() - 1) as u16;
                 self.col_index = self.data[self.line_index as usize].len() as u16;
             }
         }
@@ -150,12 +148,8 @@ fn reload_terminal_input_mode(mut terminal: &Stdout, data: GapBuffer) {
     terminal.flush().unwrap();
 }
 
-fn handle_key_event(event: KeyEvent, input_mode: &mut bool, quit: &mut bool, terminal: &Stdout, mut data: GapBuffer) -> Option<(bool, bool, GapBuffer)> {
-    /*! Handle the key event and return a tuple with the following values:
-    * 1. bool: quit the file editor
-    * 2. bool: input mode
-    * 3. String: data modified
-    */
+fn handle_key_event(event: KeyEvent, input_mode: &mut bool, quit: &mut bool, terminal: &Stdout, mut data: GapBuffer) -> GapBuffer {
+    // Handle the key event, and return the possible modified data
     if event.kind == KeyEventKind::Press {
         if *input_mode {
             match event.code {
@@ -163,71 +157,71 @@ fn handle_key_event(event: KeyEvent, input_mode: &mut bool, quit: &mut bool, ter
                     data.push(x);
                     reload_terminal_input_mode(&terminal, data.clone());
                     *quit = false;
-                    Some((false, *input_mode, data))
+                    data
                 },
                 KeyCode::Left => {
                     data.move_left();
                     reload_terminal_input_mode(&terminal, data.clone());
                     *quit = false;
-                    Some((false, *input_mode, data))
+                    data
                 },
                 KeyCode::Right => {
                     data.move_right();
                     reload_terminal_input_mode(&terminal, data.clone());
                     *quit = false;
-                    Some((false, *input_mode, data))
+                    data
                 },
                 KeyCode::Up => {
                     data.move_up();
                     reload_terminal_input_mode(&terminal, data.clone());
                     *quit = false;
-                    Some((false, *input_mode, data))
+                    data
                 },
                 KeyCode::Down => {
                     data.move_down();
                     reload_terminal_input_mode(&terminal, data.clone());
                     *quit = false;
-                    Some((false, *input_mode, data))
+                    data
                 },
                 KeyCode::Backspace => {
                     data.remove();
                     reload_terminal_input_mode(&terminal, data.clone());
                     *quit = false;
-                    Some((false, *input_mode, data))
+                    data
                 },
                 KeyCode::Enter => {
                     data.push_line();
                     reload_terminal_input_mode(&terminal, data.clone());
                     *quit = false;
-                    Some((false, *input_mode, data))
+                    data
                 },
                 KeyCode::Esc => {
                     *input_mode = false;
                     *quit = false;
-                    Some((false, false, data))
+                    data
                 },
-                _ => None
+                _ => data
             }
         } else {
             match event.code {
                 KeyCode::Char(x) => {
                     if x == 's' && event.modifiers == KeyModifiers::CONTROL {
                         *quit = true;
-                        return Some((true, *input_mode, data));
+                        data
                     } else if x == 'i' {
                         reload_terminal_input_mode(&terminal, data.clone());
                         *input_mode = true;
                         *quit = false;
-                        return Some((false, true, data));
+                        data
                     } else {
-                        None
+                        data
                     }
                 },
-                _ => None
+                _ => data
             }
         }
     } else{
-        None
+        data
     }
 }
 
@@ -236,8 +230,6 @@ fn create_gap_buffer() -> String {
     let mut quit: bool = false;
     let mut data: GapBuffer = GapBuffer::new();
     let mut input_mode: bool = false;
-    let mut horizontal_moves = 0;
-    let mut vertical_moves = 0;
 
     EnterAlternateScreen;
     enable_raw_mode().expect("Raw Mode of terminal not enabled");
@@ -253,16 +245,12 @@ fn create_gap_buffer() -> String {
                     h = nh;
                 },
                 Event::Key(event) => {
-                    match handle_key_event(event, &mut input_mode, &mut quit, &terminal, data.clone()) {
-                        Some((nquit, ninput_mode, ndata)) => {
-                            if !ninput_mode {
-                                reload_terminal_command_mode(&terminal, ndata.to_string().as_str());
-                            }
-                            // quit = nquit;
-                            // input_mode = ninput_mode;
-                            data = ndata;
-                        },
-                        None => {}
+                    data = handle_key_event(event, &mut input_mode, &mut quit, &terminal, data.clone());
+                    if !input_mode {
+                        reload_terminal_command_mode(&terminal, data.to_string().as_str());
+                    }
+                    if quit {
+                        break;
                     }
                 }
                 _ => {
