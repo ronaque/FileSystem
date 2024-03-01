@@ -1,7 +1,5 @@
 use std::io::{self, stdout, Write};
-use crossterm::cursor::MoveTo;
 use crossterm::QueueableCommand;
-use crossterm::terminal::{Clear, ClearType};
 
 mod commands_handler;
 mod types;
@@ -15,8 +13,8 @@ fn create_root() -> types::Inode {
 
 fn main() {
     let mut terminal = stdout();
-    terminal.queue(Clear(ClearType::All)).unwrap();
-    terminal.queue(MoveTo(0,0)).unwrap();
+    // terminal.queue(Clear(ClearType::All)).unwrap();
+    // terminal.queue(MoveTo(0,0)).unwrap();
     terminal.write(b"Welcome to VFS\n").unwrap();
     let root = create_root();
     let mut actual_inode = root;

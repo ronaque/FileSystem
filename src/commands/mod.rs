@@ -1,6 +1,6 @@
 use crate::types::Inode;
-mod new;
+mod new_file;
 
 pub fn create_new_file(name: String, hard_link: Inode) -> Inode {
-    new::create_new_file(name, hard_link)
+    new_file::create_new_file(name, hard_link)
 }

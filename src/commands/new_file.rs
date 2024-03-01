@@ -3,7 +3,7 @@ use std::thread::sleep;
 use std::time::Duration;
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, poll, read};
 use crossterm::{QueueableCommand, terminal};
-use crossterm::cursor::{MoveTo, MoveLeft, MoveUp, position};
+use crossterm::cursor::{MoveTo};
 use crossterm::terminal::{Clear, ClearType, disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
 use crate::types::{FILE_MODE, Inode};
 
@@ -149,7 +149,7 @@ fn reload_terminal_input_mode(mut terminal: &Stdout, data: GapBuffer) {
 }
 
 fn handle_key_event(event: KeyEvent, input_mode: &mut bool, quit: &mut bool, terminal: &Stdout, mut data: GapBuffer) -> GapBuffer {
-    // Handle the key event, and return the possible modified data
+    // Handle the key event, and return the modified data
     if event.kind == KeyEventKind::Press {
         if *input_mode {
             match event.code {
@@ -231,19 +231,14 @@ fn create_gap_buffer() -> String {
     let mut data: GapBuffer = GapBuffer::new();
     let mut input_mode: bool = false;
 
-    EnterAlternateScreen;
+    let _1 = EnterAlternateScreen;
     enable_raw_mode().expect("Raw Mode of terminal not enabled");
     terminal.queue(MoveTo(0, 0)).unwrap();
     reload_terminal_command_mode(&terminal, data.to_string().as_str());
-    let (mut w, mut h) = terminal::size().unwrap();
 
     while !quit {
         while poll(Duration::ZERO).unwrap() {
             match read().unwrap() {
-                Event::Resize(nw, nh) => {
-                    w = nw;
-                    h = nh;
-                },
                 Event::Key(event) => {
                     data = handle_key_event(event, &mut input_mode, &mut quit, &terminal, data.clone());
                     if !input_mode {
@@ -261,7 +256,7 @@ fn create_gap_buffer() -> String {
         sleep(Duration::from_millis(33));
     }
 
-    LeaveAlternateScreen;
+    let _2 = LeaveAlternateScreen;
     disable_raw_mode().expect("Exit raw mode of terminal failed");
     terminal.queue(Clear(ClearType::All)).unwrap();
     terminal.queue(MoveTo(0, 0)).unwrap();
