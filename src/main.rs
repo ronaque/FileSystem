@@ -34,14 +34,9 @@ fn main() {
             .map(String::from)
             .collect();
 
-        match commands_handler::handle_commands(command_vector, actual_inode.clone()) {
-            Some((inode_replacer, quit)) => {
-                if quit {
-                    break;
-                }
-                actual_inode = inode_replacer;
-            }
-            None => {}
+        let quit = commands_handler::handle_commands(command_vector, &mut actual_inode);
+        if quit {
+            break;
         }
     }
     println!("Goodbye! See you soon! But this won't be here anymore D:");

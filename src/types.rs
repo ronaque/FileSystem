@@ -39,7 +39,7 @@ impl Inode {
                 updated_at: Some(utils::now_date()),
                 accessed_at: Some(utils::now_date()),
                 serial_number,
-                data: InodeData::File(File::new(name)),
+                data: InodeData::Directory(Directory::new(name)),
             }
         } else {
             Inode {
@@ -51,7 +51,7 @@ impl Inode {
                 updated_at: Some(utils::now_date()),
                 accessed_at: Some(utils::now_date()),
                 serial_number,
-                data: InodeData::Directory(Directory::new(name)),
+                data: InodeData::File(File::new(name)),
             }
         }
     }
@@ -129,6 +129,14 @@ impl Inode {
         terminal.flush().unwrap();
     }
 
+    pub fn add_file(&mut self, file: Inode) {
+        if let InodeData::Directory(directory) = &mut self.data {
+            directory.add_file(file);
+        } else {
+            eprintln!("Error: trying to add a file to a non-directory inode");
+        }
+    }
+
 }
 
 #[derive(Debug, Clone)]
@@ -179,5 +187,9 @@ impl Directory {
             name: self.name.clone(),
             files: self.files.clone(),
         }
+    }
+
+    pub fn add_file(&mut self, file: Inode) {
+        self.files.push(file);
     }
 }

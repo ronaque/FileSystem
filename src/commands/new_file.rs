@@ -154,10 +154,16 @@ fn handle_key_event(event: KeyEvent, input_mode: &mut bool, quit: &mut bool, ter
         if *input_mode {
             match event.code {
                 KeyCode::Char(x) => {
-                    data.push(x);
-                    reload_terminal_input_mode(&terminal, data.clone());
-                    *quit = false;
-                    data
+                    if x == 'c' && event.modifiers == KeyModifiers::CONTROL {
+                        *input_mode = false;
+                        *quit = false;
+                        data
+                    } else{
+                        data.push(x);
+                        reload_terminal_input_mode(&terminal, data.clone());
+                        *quit = false;
+                        data
+                    }
                 },
                 KeyCode::Left => {
                     data.move_left();
@@ -205,7 +211,7 @@ fn handle_key_event(event: KeyEvent, input_mode: &mut bool, quit: &mut bool, ter
         } else {
             match event.code {
                 KeyCode::Char(x) => {
-                    if x == 's' && event.modifiers == KeyModifiers::CONTROL {
+                    if x == 's' {
                         *quit = true;
                         data
                     } else if x == 'i' {
@@ -265,17 +271,18 @@ fn create_gap_buffer() -> String {
     data.to_string()
 }
 
-pub fn create_new_file(name: String, hard_link: Inode) -> Result<(), &'static str> {
+pub fn create_new_file(name: String, hard_link: &mut Inode) -> Result<(), &'static str> {
     let file_data: String = create_gap_buffer();
 
-    let inode = Inode::new_file_with_data(name, file_data, Some(Box::new(hard_link.clone())));
+    let inode_file = Inode::new_file_with_data(name, file_data, Some(Box::new(hard_link.clone())));
 
     if hard_link.is_file(){
         return Err("The hard link is a file, it should be a directory");
     }
 
+    hard_link.add_file(inode_file.clone());
+
+
     return Ok(());
-    // Todo!("Create the inode with the file data and name");
-    // Todo!("Add the new file to the current directory");
     // Todo!("Calculate the file size and store on the inode, and directory size recursively");
 }
