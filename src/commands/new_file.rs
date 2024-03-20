@@ -286,7 +286,7 @@ pub fn create_new_file(name: String, hard_link: &mut Inode) -> Result<(), &'stat
         return Err("The hard link is a file, it should be a directory");
     }
 
-    hard_link.add_file(inode_file.clone());
+    hard_link.add_file(inode_file);
 
     return Ok(());
 }

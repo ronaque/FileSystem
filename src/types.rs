@@ -100,6 +100,10 @@ impl Inode {
         }
     }
 
+    pub fn get_size(&self) -> u64 {
+        self.size
+    }
+
     pub fn is_file(&self) -> bool {
         self.mode == FILE_MODE
     }
@@ -134,12 +138,18 @@ impl Inode {
     }
 
     pub fn add_file(&mut self, file: Inode) {
+
         if let InodeData::Directory(directory) = &mut self.data {
             self.size += file.size;
             directory.add_file(file);
         } else {
+            // todo: handle error
             eprintln!("Error: trying to add a file to a non-directory inode");
         }
+    }
+
+    pub fn add_to_size(&mut self, size: u64) {
+        self.size += size;
     }
 
 }
