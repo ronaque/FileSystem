@@ -8,8 +8,8 @@ mod types;
 mod utils;
 mod commands;
 
-fn create_root() -> types::Inode {
-    let root = types::Inode::new(types::DIR_MODE, String::from("/"), None);
+fn create_root() -> types::Inode<'static> {
+    let root = types::Inode::new(types::DIR_MODE, String::from("/"));
     root
 }
 

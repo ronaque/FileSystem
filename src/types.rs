@@ -8,26 +8,25 @@ const ROOT_INODE: u64 = 0;
 static mut INODE_SERIAL_NUMER: u64 = 0;
 
 #[derive(Debug, Clone)]
-pub enum InodeData {
+pub enum InodeData<'a> {
     File(File),
-    Directory(Directory),
+    Directory(Directory<'a>),
 }
 
 #[derive(Debug, Clone)]
-pub struct Inode {
+pub struct Inode<'a> {
     mode: u8,                  // file or directory
     size: u64,                 // in bytes
     permissions: (bool, bool), // (read, write)
-    hard_link: Option<Box<Inode>>,
     created_at: Option<u64>,
     updated_at: Option<u64>,
     accessed_at: Option<u64>,
     serial_number: u64,
-    data: InodeData,
+    data: InodeData<'a>,
 }
 
-impl Inode {
-    pub fn new(mode: u8, name: String, hard_link: Option<Box<Inode>>) -> Inode {
+impl Inode<'_> {
+    pub fn new(mode: u8, name: String) -> Inode<'static> {
         let serial_number: u64 = unsafe { INODE_SERIAL_NUMER };
         unsafe { INODE_SERIAL_NUMER += 1; }
         if mode == DIR_MODE {
@@ -36,7 +35,6 @@ impl Inode {
                 mode,
                 size,
                 permissions: (true, true),
-                hard_link,
                 created_at: Some(utils::now_date()),
                 updated_at: Some(utils::now_date()),
                 accessed_at: Some(utils::now_date()),
@@ -49,7 +47,6 @@ impl Inode {
                 mode,
                 size,
                 permissions: (true, true),
-                hard_link,
                 created_at: Some(utils::now_date()),
                 updated_at: Some(utils::now_date()),
                 accessed_at: Some(utils::now_date()),
@@ -59,7 +56,7 @@ impl Inode {
         }
     }
 
-    pub fn new_file_with_data(name: String, data: String, hard_link: Option<Box<Inode>>) -> Inode {
+    pub fn new_file_with_data(name: String, data: String) -> Inode<'static> {
         let size = (size_of::<Inode>() + size_of::<File>() + data.len()) as u64;
         let serial_number: u64 = unsafe { INODE_SERIAL_NUMER };
         unsafe { INODE_SERIAL_NUMER += 1; }
@@ -67,7 +64,6 @@ impl Inode {
             mode: FILE_MODE,
             size,
             permissions: (true, true),
-            hard_link,
             created_at: Some(utils::now_date()),
             updated_at: Some(utils::now_date()),
             accessed_at: Some(utils::now_date()),
@@ -81,7 +77,6 @@ impl Inode {
             mode: self.mode,
             size: self.size,
             permissions: self.permissions,
-            hard_link: self.hard_link.clone(),
             created_at: self.created_at,
             updated_at: self.updated_at,
             accessed_at: self.accessed_at,

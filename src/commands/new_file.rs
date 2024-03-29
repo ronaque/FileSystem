@@ -275,18 +275,18 @@ fn create_gap_buffer() -> String {
     data.to_string()
 }
 
-pub fn create_new_file(name: String, hard_link: &mut Inode) -> Result<(), &'static str> {
+pub fn create_new_file(name: String, parent_inode: &mut Inode) -> Result<(), &'static str> {
     // Create a new file with the given name and add it to the hard link, which must be a directory
 
     let file_data: String = create_gap_buffer();
 
-    let inode_file = Inode::new_file_with_data(name, file_data, Some(Box::new(hard_link.clone())));
+    let inode_file = Inode::new_file_with_data(name, file_data);
 
-    if hard_link.is_file(){
+    if parent_inode.is_file(){
         return Err("The hard link is a file, it should be a directory");
     }
 
-    hard_link.add_file(inode_file);
+    parent_inode.add_inode(&inode_file);
 
     return Ok(());
 }
