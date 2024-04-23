@@ -1,4 +1,3 @@
-use std::mem::size_of;
 use crate::commands::create_new_file;
 use crate::types::{DIR_MODE, Inode};
 
@@ -48,7 +47,7 @@ fn handle_help(commands: Vec<String>) {
     }
 }
 
-fn handle_new(commands: Vec<String>, hard_link: &mut Inode) -> Result<(), &'static str> {
+fn handle_new(commands: Vec<String>, parent_inode: &mut Inode) -> Result<(), &'static str> {
     if commands.len() != 2 {
         return Err("Invalid number of arguments, type 'help new' to see the usage of the command");
     }
@@ -56,16 +55,21 @@ fn handle_new(commands: Vec<String>, hard_link: &mut Inode) -> Result<(), &'stat
         if commands[1].is_empty() || commands[1].contains("/") || commands[1].contains("\\") {
             return Err("Invalid name for new file");
         }
-        match create_new_file(commands[1].clone(), hard_link) {
-            Ok(()) => Ok(()),
+        match create_new_file(commands[1].clone(), parent_inode) {
+            Ok(()) => {
+                println!("Directory Meta-data: {:#?}", parent_inode);
+                Ok(())
+            },
             Err(error) => Err(error),
         }
     } else if commands[0] == "directory" {
         if commands[1].is_empty() || commands[1].contains("/") || commands[1].contains("\\") {
             return Err("Invalid name for new directory");
         }
-        let new_directory = Inode::new(DIR_MODE, commands[1].clone(), Some(Box::new(hard_link.clone())));
-        *hard_link = new_directory;
+        let new_directory = Inode::new(DIR_MODE, commands[1].clone());
+        parent_inode.add_inode(new_directory);
+        println!("Parent directory Meta-data: {:#?}", parent_inode);
+
         Ok(())
     } else {
         return Err("Invalid type of new content, type 'help new' to see the usage of the command");
