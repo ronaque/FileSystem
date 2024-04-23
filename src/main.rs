@@ -8,7 +8,7 @@ mod types;
 mod utils;
 mod commands;
 
-fn create_root() -> types::Inode<'static> {
+fn create_root() -> types::Inode {
     let root = types::Inode::new(types::DIR_MODE, String::from("/"));
     root
 }
@@ -21,7 +21,7 @@ fn main() {
     let root = create_root();
     let mut actual_inode = root;
     loop {
-        actual_inode.print_inode_path(&mut terminal);
+        // actual_inode.print_inode_path(&mut terminal);
 
         let mut command = String::new();
         io::stdin()

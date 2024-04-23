@@ -1,4 +1,3 @@
-use std::io::{Stdout, Write};
 use std::mem::size_of;
 use super::utils;
 pub const DIR_MODE: u8 = 0;
@@ -8,13 +7,13 @@ const ROOT_INODE: u64 = 0;
 static mut INODE_SERIAL_NUMER: u64 = 0;
 
 #[derive(Debug, Clone)]
-pub enum InodeData<'a> {
+pub enum InodeData {
     File(File),
-    Directory(Directory<'a>),
+    Directory(Directory),
 }
 
 #[derive(Debug, Clone)]
-pub struct Inode<'a> {
+pub struct Inode {
     mode: u8,                  // file or directory
     size: u64,                 // in bytes
     permissions: (bool, bool), // (read, write)
@@ -22,11 +21,11 @@ pub struct Inode<'a> {
     updated_at: Option<u64>,
     accessed_at: Option<u64>,
     serial_number: u64,
-    data: InodeData<'a>,
+    data: InodeData,
 }
 
-impl Inode<'_> {
-    pub fn new(mode: u8, name: String) -> Inode<'static> {
+impl Inode {
+    pub fn new(mode: u8, name: String) -> Inode {
         let serial_number: u64 = unsafe { INODE_SERIAL_NUMER };
         unsafe { INODE_SERIAL_NUMER += 1; }
         if mode == DIR_MODE {
@@ -56,7 +55,7 @@ impl Inode<'_> {
         }
     }
 
-    pub fn new_file_with_data(name: String, data: String) -> Inode<'static> {
+    pub fn new_file_with_data(name: String, data: String) -> Inode {
         let size = (size_of::<Inode>() + size_of::<File>() + data.len()) as u64;
         let serial_number: u64 = unsafe { INODE_SERIAL_NUMER };
         unsafe { INODE_SERIAL_NUMER += 1; }
@@ -107,46 +106,22 @@ impl Inode<'_> {
         self.mode == DIR_MODE
     }
 
-    pub fn print_inode_path(&self, terminal: &mut Stdout) {
-        let mut hard_link_tree: Vec<&Inode> = vec![self];
-        let mut current_inode = self;
-        while let Some(inode) = &current_inode.hard_link {
-            hard_link_tree.push(inode);
-            current_inode = inode;
-        }
-        let reversed_tree: Vec<&Inode> = hard_link_tree.into_iter().rev().collect();
-        let mut tree_string: String  = String::new();
-        for i in 0..reversed_tree.len() {
-            if i == 0 {
-                tree_string.push_str(reversed_tree[i].get_name());
-                continue;
-            } else if i == reversed_tree.len() - 1 {
-                tree_string.push_str(reversed_tree[i].get_name());
-                continue;
-            } else {
-                tree_string.push_str(reversed_tree[i].get_name());
-                tree_string.push_str("/");
-            }
-        }
-        terminal.write(format!("{}>", tree_string).as_bytes()).unwrap();
-        terminal.flush().unwrap();
+    pub fn add_to_size(&mut self, size: u64) {
+        self.size += size;
     }
 
-    pub fn add_file(&mut self, file: Inode) {
-
-        if let InodeData::Directory(directory) = &mut self.data {
-            self.size += file.size;
-            directory.add_file(file);
+    pub fn add_inode(&mut self, inode: Inode) {
+        if self.is_directory() {
+            self.add_to_size(inode.size);
+            match &mut self.data {
+                InodeData::Directory(directory) => directory.add_inode(inode),
+                _ => eprintln!("Error: trying to add a file to a non-directory inode"),
+            }
         } else {
             // todo: handle error
             eprintln!("Error: trying to add a file to a non-directory inode");
         }
     }
-
-    pub fn add_to_size(&mut self, size: u64) {
-        self.size += size;
-    }
-
 }
 
 #[derive(Debug, Clone)]
@@ -199,7 +174,7 @@ impl Directory {
         }
     }
 
-    pub fn add_file(&mut self, file: Inode) {
-        self.files.push(file);
+    pub fn add_inode(&mut self, inode: Inode) {
+        self.files.push(inode);
     }
 }

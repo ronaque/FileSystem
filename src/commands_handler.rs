@@ -58,21 +58,18 @@ fn handle_new(commands: Vec<String>, parent_inode: &mut Inode) -> Result<(), &'s
         match create_new_file(commands[1].clone(), parent_inode) {
             Ok(()) => {
                 println!("Directory Meta-data: {:#?}", parent_inode);
-                Ok(())},
+                Ok(())
+            },
             Err(error) => Err(error),
         }
     } else if commands[0] == "directory" {
         if commands[1].is_empty() || commands[1].contains("/") || commands[1].contains("\\") {
             return Err("Invalid name for new directory");
         }
-        let mut new_directory = Inode::new(DIR_MODE, commands[1].clone());
-        println!("{:?}", parent_inode.get_size());
-        parent_inode.add_inode(&new_directory);
-        // parent_inode.add_to_size(size_of::<Inode>() as u64);
-        println!("Added size of new dir: {:#?}", new_directory.get_size());
-        println!("Old Hard Link: {:#?}", parent_inode);
-        *parent_inode = new_directory;
-        println!("New Hard Link: {:#?}", parent_inode);
+        let new_directory = Inode::new(DIR_MODE, commands[1].clone());
+        parent_inode.add_inode(new_directory);
+        println!("Parent directory Meta-data: {:#?}", parent_inode);
+
         Ok(())
     } else {
         return Err("Invalid type of new content, type 'help new' to see the usage of the command");
