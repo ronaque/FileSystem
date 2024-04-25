@@ -71,6 +71,31 @@ impl Inode {
         }
     }
 
+    pub fn remove_inode(&mut self, inode: Inode) {
+        if self.is_directory() {
+            self.size -= inode.size;
+            match &mut self.data {
+                InodeData::Directory(directory) => {
+                    let mut index = 0;
+                    for (i, inode) in directory.files.iter().enumerate() {
+                        if inode.serial_number == inode.serial_number {
+                            match &inode.data {
+                                InodeData::Directory(directory) => {
+                                    directory.clone().recursive_remove();
+                                },
+                                _ => {}
+                            }
+                            index = i;
+                            break;
+                        }
+                    }
+                    directory.files.remove(index);
+                },
+                _ => eprintln!("Error: trying to remove a file from a non-directory inode"),
+            }
+        }
+    }
+
     fn clone(&self) -> Inode {
         Inode {
             mode: self.mode,
@@ -106,13 +131,9 @@ impl Inode {
         self.mode == DIR_MODE
     }
 
-    pub fn add_to_size(&mut self, size: u64) {
-        self.size += size;
-    }
-
     pub fn add_inode(&mut self, inode: Inode) {
         if self.is_directory() {
-            self.add_to_size(inode.size);
+            self.size += inode.size;
             match &mut self.data {
                 InodeData::Directory(directory) => directory.add_inode(inode),
                 _ => eprintln!("Error: trying to add a file to a non-directory inode"),
@@ -120,6 +141,24 @@ impl Inode {
         } else {
             // todo: handle error
             eprintln!("Error: trying to add a file to a non-directory inode");
+        }
+    }
+
+    pub fn get_inode_by_name(&self, name: &str) -> Option<Inode> {
+        if self.is_directory() {
+            match &self.data {
+                InodeData::Directory(directory) => {
+                    for inode in &directory.files {
+                        if inode.get_name() == name {
+                            return Some(inode.clone());
+                        }
+                    }
+                    None
+                },
+                _ => None,
+            }
+        } else {
+            None
         }
     }
 }
@@ -176,5 +215,20 @@ impl Directory {
 
     pub fn add_inode(&mut self, inode: Inode) {
         self.files.push(inode);
+    }
+
+    pub fn recursive_remove(&mut self) {
+        for (index, inode) in self.files.iter().enumerate() {
+            match &inode.data {
+                InodeData::Directory(child_directory) => {
+                    child_directory.clone().recursive_remove();
+                    self.files.remove(index);
+                },
+                InodeData::File(_) => {
+                    self.files.remove(index);
+                },
+                _ => {},
+            }
+        }
     }
 }
