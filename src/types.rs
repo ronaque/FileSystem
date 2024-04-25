@@ -71,15 +71,15 @@ impl Inode {
         }
     }
 
-    pub fn remove_inode(&mut self, inode: Inode) {
+    pub fn remove_inode(&mut self, rem_inode: Inode) {
         if self.is_directory() {
-            self.size -= inode.size;
+            self.size -= rem_inode.size;
             match &mut self.data {
                 InodeData::Directory(directory) => {
                     let mut index = 0;
-                    for (i, inode) in directory.files.iter().enumerate() {
-                        if inode.serial_number == inode.serial_number {
-                            match &inode.data {
+                    for (i, child_inode) in directory.files.iter().enumerate() {
+                        if rem_inode.serial_number == child_inode.serial_number {
+                            match &rem_inode.data {
                                 InodeData::Directory(directory) => {
                                     directory.clone().recursive_remove();
                                 },
@@ -218,7 +218,8 @@ impl Directory {
     }
 
     pub fn recursive_remove(&mut self) {
-        for (index, inode) in self.files.iter().enumerate() {
+        let mut index = 0;
+        for inode in self.files.clone() {
             match &inode.data {
                 InodeData::Directory(child_directory) => {
                     child_directory.clone().recursive_remove();
@@ -229,6 +230,7 @@ impl Directory {
                 },
                 _ => {},
             }
+            index += 1;
         }
     }
 }
