@@ -30,18 +30,26 @@ pub fn handle_commands(commands: Vec<String>, actual_inode: &mut Inode) -> bool 
 }
 
 fn handle_help(commands: Vec<String>) {
+    let help_command = String::from("— help: \t\t\t\tshow the list of available commands");
+    let new_command = String::from("— new <file|directory> <name>: \tcreate a new file or directory");
+    let remove_command = String::from("— remove <filename|directoryname>: \tif a file is provided, remove the file.
+                \t\t\t\tif a directory is provided, recursively remove the directory and all its content");
+    let exit_command = String::from("— exit: \t\t\t\texit the program");
     if commands.is_empty() {
         println!(
             "Command options:
-            help: show the list of available commands
-            new <file|directory> <name>: create a new file or directory
-            exit: exit the program"
+            {help_command}
+            {new_command}
+            {remove_command}
+            {exit_command}
+            "
         );
     } else if commands.len() > 1 {
         println!("Too many arguments for help command")
     } else {
         match commands[0].as_str() {
-            "new" => println!("new <file|directory> <name>: create a new file or directory"),
+            "new" => println!("{new_command}"),
+            "remove" => println!("{remove_command}"),
             _ => println!("Command not found. Type 'help' to see the list of available commands"),
         }
     }
